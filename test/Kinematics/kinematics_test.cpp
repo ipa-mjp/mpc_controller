@@ -23,8 +23,14 @@ int main(int argc, char **argv)
 
 		Eigen::MatrixXd j_mat = kinematics.getJacobian(jnt_angles);
 
+
+		//compute Psudoinverse of Jacobian matrix
 		JInvBySVD j_inv;
 		Eigen::MatrixXd jInv_mat = j_inv.calculate(j_mat);
+
+		std::cout<<"\033[94m"<<"Psudo inverse of Jacobian Matrix " <<"\033[0m"<<std::endl;
+
+		std::cout<<"\033[94m"	<< jInv_mat << "\t" <<"\033[0m"<<std::endl;
 
 		if (_DEBUG_)
 		{
@@ -36,25 +42,12 @@ int main(int argc, char **argv)
 
 			Eigen::MatrixXd jInv_test_mat = j_inv.calculate(test_mat);
 
-			std::cout<<"\033[94m"<<"Psudo inverse of Jacobian Matrix " <<"\033[0m"<<std::endl;
+			std::cout<<"\033[94m"<<"Psudo inverse of Jacobian test Matrix " <<"\033[0m"<<std::endl;
 
 			std::cout<<"\033[94m"	<< jInv_test_mat << "\t" <<"\033[0m"<<std::endl;
 
 		}
 
-		std::cout<<"\033[94m"<<"Psudo inverse of Jacobian Matrix " <<"\033[0m"<<std::endl;
-
-		std::cout<<"\033[94m"	<< jInv_mat << "\t" <<"\033[0m"<<std::endl;
-
-
-
 	}
-
-
-
-	//
-
-
-
-
+return 0;
 }
