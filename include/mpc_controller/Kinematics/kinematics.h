@@ -38,7 +38,7 @@
 /**
  * @brief class for computing forward kinematics and inverse kinematics
  */
-#define _DEBUG_  true
+#define _DEBUG_  false
 
 namespace nmpc
 {
@@ -75,7 +75,7 @@ namespace nmpc
 
 	public:
 
-		Kinematics(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="base_link", const std::string& chain_tip_link="gripper", const std::string& root_frame="world");
+		Kinematics(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="arm_base_link", const std::string& chain_tip_link="arm_7_link", const std::string& root_frame="world");
 
 		void forwardKinematics(const KDL::JntArray& jnt_angels);
 
@@ -110,8 +110,8 @@ namespace nmpc
 		KDL::Frame getForwardKinematics(void);
 		//Eigen::MatrixXd getForwardKinematics(void);
 
-		void getJacobian(Eigen::MatrixXd& j_mat);
-		Eigen::MatrixXd getJacobian(void);
+		void getJacobian(const KDL::JntArray& jnt_angles, Eigen::MatrixXd& j_mat);
+		Eigen::MatrixXd getJacobian(const KDL::JntArray& jnt_angles);
 
 		//set functions
 

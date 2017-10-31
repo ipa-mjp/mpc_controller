@@ -59,7 +59,7 @@ Kinematics::Kinematics(const std::string rbt_description , const std::string& ch
     	KDL::Vector rot;
     	this->kinematic_chain.getSegment(i).getFrameToTip().M.GetRotAngle(rot);
     	this->jnt_rot_axis.push_back(rot);
-    	std::cout<<rot.x()<<" , "<<rot.y()<<" , "<<rot.z()<<std::endl;
+    	//std::cout<<rot.x()<<" , "<<rot.y()<<" , "<<rot.z()<<std::endl;
 
     	this->jnt_homo_mat.push_back(this->frames.at(i));
 
@@ -321,6 +321,7 @@ void Kinematics::forwardKinematics(const KDL::JntArray& jnt_angels)
 		fk_mat = fk_mat * this->jnt_homo_mat[i];
 		jnt_fk_mat.push_back(fk_mat);
 
+		/*
     	if (_DEBUG_)
     	{
 			std::cout<<"\033[36;1m"<<"fk matrix of " << this->jnts.at(i).getName() <<"\033[36;0m"<<std::endl;
@@ -333,12 +334,24 @@ void Kinematics::forwardKinematics(const KDL::JntArray& jnt_angels)
 										<<	" rzx "<< rot_mat(2,0) <<	" rzy "<< rot_mat(2,1) <<	" rzz "<< rot_mat(2,2)	<< "\n"
 										<<	" px "<< pos_mat.x() <<	" py "<< pos_mat.y() <<	" pz "<< pos_mat.z()
 						<<"\033[32;0m"<<std::endl;
-    	}
+    	}*/
 
 	}
 
 	this->fk_mat = fk_mat;
 
+	if (_DEBUG_)
+	{
+		KDL::Rotation rot_mat = this->fk_mat.M;
+		KDL::Vector pos_mat = this->fk_mat.p;
+
+			//for (unsigned int i = 0; i < it->)
+			std::cout<<"\033[32;1m"	<<	" rxx "<< rot_mat(0,0) <<	" rxy "<< rot_mat(0,1) <<	" rxz "<< rot_mat(0,2)	<< "\n"
+									<<	" ryx "<< rot_mat(1,0) <<	" ryy "<< rot_mat(1,1) <<	" ryz "<< rot_mat(1,2)	<< "\n"
+									<<	" rzx "<< rot_mat(2,0) <<	" rzy "<< rot_mat(2,1) <<	" rzz "<< rot_mat(2,2)	<< "\n"
+									<<	" px "<< pos_mat.x() <<	" py "<< pos_mat.y() <<	" pz "<< pos_mat.z()
+					<<"\033[32;0m"<<std::endl;
+	}
 }
 
 //todo: can not find fk from root frame
@@ -399,7 +412,10 @@ void Kinematics::computeJacobian(const KDL::JntArray& jnt_angels)
 
 	typedef Eigen::Matrix<double, 3, 1>       Cart3Vector;
 
-	 Cart3Vector p(0,0,0);	Cart3Vector z_0(0,0,1); 	Cart3Vector p_0(0,0,0);
+	Cart3Vector p(0,0,0);	Cart3Vector z_0(0,0,1); 	Cart3Vector p_0(0,0,0);
+
+	 //compute end-effector position by using forward kinematics
+	this->forwardKinematics(jnt_angels);
 
 	// dist from end-effector to base-link
 	p(0) = fk_mat.p.x();	p(1) = fk_mat.p.y();	p(2) = fk_mat.p.z();
@@ -551,8 +567,53 @@ void Kinematics::getNumberOfJnts(uint16_t& nr_jnts)
 	nr_jnts = this->dof;
 }
 
+inline
 uint16_t Kinematics::getNumberOfSegments(void)
 {
 	return this->segments;
 }
-void getNumberOfSegments(uint16_t& nr_segments);
+
+inline
+void Kinematics::getNumberOfSegments(uint16_t& nr_segments)
+{
+	nr_segments = this->segments;
+}
+
+inline
+std::vector<KDL::Joint> Kinematics::getJntsInfo(void)
+{
+	return this->jnts;
+}
+
+inline
+void Kinematics::getJntsInfo(std::vector<KDL::Joint>& jnts)
+{
+	jnts = this->jnts;
+}
+
+inline
+KDL::Frame Kinematics::getForwardKinematics(void)
+{
+	return this->fk_mat;
+}
+
+inline
+void Kinematics::getForwardKinematics(KDL::Frame& fk_mat)
+{
+	fk_mat = this->fk_mat;
+}
+
+
+Eigen::MatrixXd Kinematics::getJacobian(const KDL::JntArray& jnt_angles)
+{
+	this->computeJacobian(jnt_angles);
+
+	return this->JacobianMatrix;
+}
+
+inline
+void Kinematics::getJacobian(const KDL::JntArray& jnt_angles, Eigen::MatrixXd& j_mat)
+{
+	this->computeJacobian(jnt_angles);
+	j_mat = this->JacobianMatrix;
+}
