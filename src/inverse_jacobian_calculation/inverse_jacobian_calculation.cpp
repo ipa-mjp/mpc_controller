@@ -32,7 +32,6 @@ void JInvBySVD::calculate(const Eigen::MatrixXd& jacobian, Eigen::MatrixXd& jaco
 	jacobianInv = this->calculate(jacobian);
 }
 
-
 Eigen::MatrixXd JInvByDirect::calculate(const Eigen::MatrixXd& jacobian) const
 {
     Eigen::MatrixXd result;
