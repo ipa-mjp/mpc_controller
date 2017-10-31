@@ -1,7 +1,10 @@
 
 #include <ros/ros.h>
+#include <mpc_controller/mpc_solver/mpc_solver_ACADO.h>
 #include <mpc_controller/Kinematics/kinematics.h>
-#include <mpc_controller/inverse_jacobian_calculation/inverse_jacobian_calculation.h>
+//#include <mpc_controller/inverse_jacobian_calculation/inverse_jacobian_calculation.h>
+
+
 
 #define _DEBUG_  false
 using namespace nmpc;
@@ -23,7 +26,9 @@ int main(int argc, char **argv)
 
 		Eigen::MatrixXd j_mat = kinematics.getJacobian(jnt_angles);
 
+		std::cout<<"\033[94m"	<< j_mat << "\t" <<"\033[0m"<<std::endl;
 
+		/*
 		//compute Psudoinverse of Jacobian matrix
 		JInvBySVD j_inv;
 		Eigen::MatrixXd jInv_mat = j_inv.calculate(j_mat);
@@ -46,7 +51,12 @@ int main(int argc, char **argv)
 
 			std::cout<<"\033[94m"	<< jInv_test_mat << "\t" <<"\033[0m"<<std::endl;
 
-		}
+		}*/
+
+		//mpc_solver class
+		ModelPredictiveControlACADO mpc;
+		mpc.setJacobianData(j_mat);
+		Eigen::MatrixXd control_u = mpc.solve();
 
 	}
 return 0;
