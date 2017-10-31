@@ -1,5 +1,5 @@
 
-#include <mpc_controller/kinematics.h>
+#include <mpc_controller/Kinematics/kinematics.h>
 
 using namespace nmpc;
 

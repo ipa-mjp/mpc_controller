@@ -31,7 +31,7 @@ catkin_package(
 include_directories(include ${catkin_INCLUDE_DIRS} ${EIGEN_INCLUDE_DIRS} ${orocos_kdl_INCLUDE_DIRS} ${ACADO_INCLUDE_PACKAGES} )
 FIND_LIBRARY(libacado libacado_toolkit_s.so ${ACADO_DIR}/build/lib)
 
-add_executable(kinematics_test test/kinematics_test.cpp src/kinematics.cpp)
+add_executable(kinematics_test test/Kinematics/kinematics_test.cpp src/Kinematics/kinematics.cpp)
 
 add_dependencies(kinematics_test ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
