@@ -4,12 +4,15 @@
 
 //ROS
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64MultiArray.h>
 #include <nav_msgs/Odometry.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <tf2_kdl/tf2_kdl.h>
 
 //KDL kinematics
 #include <urdf/model.h>
@@ -17,10 +20,14 @@
 #include <kdl/jntarray.hpp>
 #include <kdl/jntarrayvel.hpp>
 #include <kdl/frames.hpp>
-
+#include <kdl_conversions/kdl_msg.h>
+#include <kdl/chainfksolver.hpp>
+#include <kdl/chainfksolverpos_recursive.hpp>
+#include <kdl/chainjnttojacsolver.hpp>
 //C++
 #include <iostream>
 #include <map>
+#include <string>
 
 //ACADO
 #include <acado_toolkit.hpp>
@@ -28,32 +35,10 @@
 #include <acado_optimal_control.hpp>
 #include <acado/bindings/acado_gnuplot/gnuplot_window.hpp>
 
-
-//------------------------------------------------------------------------------------------------------------------------------------------
-/**
- * @brief describe robot model using KDL kinematics
- */
-/*
-struct RobotModel
-{
-	unsigned int dof;
-    urdf::Model urdf;
-    KDL::Chain kinematic_chain;
-    std::vector<KDL::Joint> joints;
-    std::vector<KDL::Frame> joint_frames;
-    std::vector<KDL::Segment> forward_kinematics;
-    bool base_active_;
-    std::unordered_map<std::string, std::vector<std::string> > self_collision_map_;
-    std::string root_frame;
-    std::vector<double> masses;
-
-};
-*/
-//--------------------------------------------------------------------------------------------------------------------------------------------
-
 /**
  * @brief class for computing forward kinematics and inverse kinematics
  */
+#define _DEBUG_  true
 
 namespace nmpc
 {
@@ -61,117 +46,74 @@ namespace nmpc
 	class Kinematics
 	{
 	private:
+		ros::NodeHandle node_handle;
+		std::string chain_base_link;
+		std::string chain_tip_link;
+		std::string root_frame;
+		unsigned int segments;
+		unsigned int dof;
+		std::vector<std::string> jnt_type;
+		//std::vector<std::vector<uint16_t> > jnt_axis;
+		std::vector<KDL::Vector> jnt_rot_axis;
+		std::vector<std::vector<double> > jnt_rot_angle;
 
-		//ROS data member functions
-		ros::NodeHandle node_handler_;
 
-		//KDL data member functions
-		unsigned int 				dof_				;		// Degree of freedom
-		unsigned int 				nr_segments_		;		// Nr of segments
-		bool 						base_active_		;		// Mobile or stationary manipulator
-//		urdf::Model 				robot_urdf_model_	;		// Urdf model of robot
-		KDL::Tree					robot_tree_			;		// Robot tree
-		KDL::Chain 					kinematic_chain_	;		// Kinematic chain of robot
-		std::vector<KDL::Joint> 	joints_name_		;		// Vector of joint names
-		std::vector<KDL::Frame> 	joints_frame_		;		// Vector of joint frame
-//		std::vector<KDL::Segment>	forward_kinematics_	;		// Number of segments
-		std::string 				chain_base_link		;		// Chain base link
-		std::string 				chain_tip_link		;		// Chain tip link
+		KDL::Chain	kinematic_chain;
+		std::vector<KDL::Frame>	frames;
+		std::vector<KDL::Joint>	jnts;
+		std::vector<KDL::Frame>	jnt_homo_mat;	//homo matrix of each frame with prevoius joint
 
+		std::vector<KDL::Frame> jnt_fk_mat;	//ff_mat
+		KDL::Frame fk_mat;
+		Eigen::Matrix<double, 6, 7> JacobianMatrix;	//Jacobian Matrix
+
+		//bool _DEBUG_;
+		void printDataMemebers(void);
+
+		void createHomoRoatationMatrix(const uint16_t& seg_nr);
+		void createRoatationMatrix(const double& angle, const std::vector<unsigned int>& rot_axis, KDL::Frame& lcl_homo_mat);
 
 	public:
 
-		Kinematics();
+		Kinematics(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="base_link", const std::string& chain_tip_link="gripper", const std::string& root_frame="world");
 
-		/**
-		 * @brief kinematics chain is defined by only base_link and tip_link
-		 * @param rbt_description = robot description containts urdf of robot
-		 * @param chain_base_link = root link of kinematic chain
-		 * @param chain_tip_link = tip link of kinematic chain called end-effector link
-		 *
-		 */
-		Kinematics(	const std::string rbt_description = "/robot_description", const std::string& chain_base_link="base_link",	const std::string& chain_tip_link="gripper"	);
+		void forwardKinematics(const KDL::JntArray& jnt_angels);
 
+		void computeJacobian(const KDL::JntArray& jnt_angels);
 
-		/**
-		 * @brief kinematics chain is defined by robot_urdf_model, base_link and tip link
-		 * @param robot_urdf_model_ = robot model loaded from urdf file, on parameter server it called robot_description
-		 * @param chain_base_link = root link of kinematic chain
-		 * @param chain_tip_link = tip link of kinematic chain called end-effector link
-		 *
-		 */
-//		Kinematics(	const urdf::Model& robot_urdf_model_, const std::string& chain_base_link="base_link", const std::string& chain_tip_link="gripper");
+		void kdl_forwardKinematics(const KDL::JntArray& jnt_angels);
+
+		void kdl_computeJacobian(const KDL::JntArray& jnt_angels);
 
 
-		/**
-		 * @brief kinematics chain is defined by kinematic_chain, base_link and tip link
-		 * @param kinematics_chain_ = initialize by other kinematic chain
-		 * @param chain_base_link = root link of kinematic chain
-		 * @param chain_tip_link = tip link of kinematic chain called end-effector link
-		 *
-		 */
-		Kinematics(	const KDL::Chain& kinematics_chain, const std::string& chain_base_link="base_link", const std::string& chain_tip_link="gripper" );
+		//get functions
+		std::string getChainBaseLink(void);
+		void getChainBaseLink(std::string& base_link);
 
-		/**
-		 * @brief kinematics chain is defined by kinematic_chain, base_link and tip link
-		 * @param robot_kdl_tree_ = robot_kdl_tree that read from parameter server
-		 * @param chain_base_link = root link of kinematic chain
-		 * @param chain_tip_link = tip link of kinematic chain called end-effector link
-		 *
-		 */
-		Kinematics(	const KDL::Tree& robot_kdl_tree, const std::string& chain_base_link="base_link", const std::string& chain_tip_link="gripper" );
+		std::string getChainTipLink(void);
+		void getChainTipLink(std::string& tip_link);
 
-		~Kinematics();
+		std::string getChainRootLink(void);
+		void getChainRootLink(std::string& root_frame);
 
+		uint16_t getNumberOfJnts(void);
+		void getNumberOfJnts(uint16_t& nr_jnts);
 
-		/**
-		 * @brief gives name of joints in kinematic chain (between root link and tip link)
-		 * @return vector of joint name
-		 */
-		std::vector<KDL::Joint> getJntNames();
+		uint16_t getNumberOfSegments(void);
+		void getNumberOfSegments(uint16_t& nr_segments);
 
-		/**
-		 * @brief gives frame of joints in kinematic chain (between root link and tip link)
-		 * @return vector of joint frames
-		 */
-		std::vector<KDL::Frame> getJntFrames();
+		std::vector<KDL::Joint> getJntsInfo(void);
+		void getJntsInfo(std::vector<KDL::Joint>& jnts);
 
-		/**
-		 * @brief gives name of base(root) link in kinematic chain
-		 * @return string object of name of base link
-		 */
-		std::string getRootlinkName();
+		void getForwardKinematics(KDL::Frame& fk_mat);
+		void getForwardKinematics(Eigen::MatrixXd& fk_mat);
+		KDL::Frame getForwardKinematics(void);
+		//Eigen::MatrixXd getForwardKinematics(void);
 
-		/**
-		 * @brief gives name of of tip(end-effector) link in kinematic chain
-		 * @return string object of name of tip link
-		 */
-		std::string getTiplinkName();
+		void getJacobian(Eigen::MatrixXd& j_mat);
+		Eigen::MatrixXd getJacobian(void);
 
-		/**
-		 * @brief gives number of joints in kinematic chain (between root link and tip link) or degree of freedom
-		 * @return integer value of dof
-		 */
-		unsigned int getDOF();
-
-		/**
-		 * @brief gives number of joints in kinematic chain (between root link and tip link) or degree of freedom
-		 * @return integer value of number of segments
-		 */
-		unsigned int getNrOfSegments();
-
-		/**
-		 * @brief gives info about base is active(mobile robot) or not(stationary platform)
-		 * @return true if mobile robot otherwise false
-		 */
-		bool isBaseActive();
-
-		/**
-		 * @brief print any type of vector value for debug purpose
-		 *@param vec = template type of vector
-		 */
-		template<class T>
-		void printVector(const T& vec);
+		//set functions
 
 	};
 
