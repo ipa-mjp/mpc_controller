@@ -4,7 +4,6 @@
 
 //ROS
 #include <ros/ros.h>
-#include <ros/console.h>
 #include <sensor_msgs/JointState.h>
 #include <geometry_msgs/Twist.h>
 #include <std_msgs/Float64MultiArray.h>
@@ -89,7 +88,7 @@ namespace nmpc
 
 		void initialize(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="arm_base_link", const std::string& chain_tip_link="arm_7_link", const std::string& root_frame="world");
 		void initialize(const KDL::Chain& kinematic_chain, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame );
-		void initialize(const ControllerParam& controller_param );
+		bool initialize(const ControllerParam& controller_param );
 
 
 		void forwardKinematics(const KDL::JntArray& jnt_angels);
