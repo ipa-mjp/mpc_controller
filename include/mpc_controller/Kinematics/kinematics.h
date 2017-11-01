@@ -35,6 +35,8 @@
 #include <acado_optimal_control.hpp>
 #include <acado/bindings/acado_gnuplot/gnuplot_window.hpp>
 
+#include <mpc_controller/data_types.h>
+
 /**
  * @brief class for computing forward kinematics and inverse kinematics
  */
@@ -87,7 +89,7 @@ namespace nmpc
 
 		void initialize(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="arm_base_link", const std::string& chain_tip_link="arm_7_link", const std::string& root_frame="world");
 		void initialize(const KDL::Chain& kinematic_chain, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame );
-		void initialize(const urdf::Model& urdf_model, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame );
+		void initialize(const ControllerParam& controller_param );
 
 
 		void forwardKinematics(const KDL::JntArray& jnt_angels);

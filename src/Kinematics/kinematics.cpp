@@ -111,7 +111,8 @@ void Kinematics::initialize(const KDL::Chain& kinematic_chain, const std::string
 
 		double roll,pitch,yaw;
 		this->kinematic_chain.getSegment(i).getFrameToTip().M.GetRPY(roll,pitch,yaw);
-		this->jnt_rot_angle.at(i).push_back(roll);	this->jnt_rot_angle.at(i).push_back(pitch);		this->jnt_rot_angle.at(i).push_back(yaw);
+		this->jnt_rot_angle.at(i).push_back(roll);	this->jnt_rot_angle.at(i).push_back(pitch);
+		this->jnt_rot_angle.at(i).push_back(yaw);
 
 		// rot angle, axis of rotation
 		KDL::Vector rot;
@@ -128,6 +129,43 @@ void Kinematics::initialize(const KDL::Chain& kinematic_chain, const std::string
 	    }
 
 	}
+}
+
+void Kinematics::initialize(const ControllerParam& controller_param)
+{
+	chain_base_link = controller_param.chain_base_link	;
+	chain_tip_link 	= controller_param.chain_tip_link	;
+	root_frame 		= controller_param.root_frame		;
+	dof				= controller_param.dof				;
+	kinematic_chain = controller_param.chain_			;
+	segments		= kinematic_chain.getNrOfSegments()	;
+
+	jnt_rot_angle.resize(segments);
+	for (uint16_t i = 0; i < segments; ++i)
+	{
+		jnts.push_back	( kinematic_chain.getSegment(i).getJoint() )		;
+		frames.push_back( kinematic_chain.getSegment(i).getFrameToTip() )	;
+		jnt_homo_mat.push_back( frames.at(i) )								;
+
+		double roll,pitch,yaw;
+		kinematic_chain.getSegment(i).getFrameToTip().M.GetRPY(roll,pitch,yaw);
+		jnt_rot_angle.at(i).push_back(roll)	;
+		jnt_rot_angle.at(i).push_back(pitch);
+		jnt_rot_angle.at(i).push_back(yaw)	;
+
+		KDL::Vector rot;
+		kinematic_chain.getSegment(i).getFrameToTip().M.GetRotAngle(rot);
+		jnt_rot_axis.push_back(rot);
+
+		if ( jnts.at(i).getType() == 0 )
+		{
+			createHomoRoatationMatrix( i );
+			dof++;
+		}
+
+	}
+	//this->printDataMemebers();
+
 }
 
 void Kinematics::createHomoRoatationMatrix(const uint16_t& seg_nr)
