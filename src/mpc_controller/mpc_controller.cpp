@@ -74,7 +74,10 @@ bool MpcController::initialize(void)
 
     //initialize kinematic class
     kinematics_solver_ptr_.reset( new Kinematics() );
-    kinematics_solver_ptr_->initialize(controller_param_);
+    if ( !(kinematics_solver_ptr_->initialize(controller_param_)) )
+    {
+    	ROS_ERROR("Failed to initialize Kinematic class");
+    }
 
 	//initialize current and last joint values and velocities
 	this->joint_states_.current_q_ 		= KDL::JntArray( controller_param_.chain_.getNrOfJoints() );
@@ -128,10 +131,10 @@ void MpcController::jointStateCallBack(const sensor_msgs::JointState::ConstPtr& 
     }
 /*
 	//-----------------------------------------------------------
-	std::cout<<"\033[0;31m"	<< "last_q_: \n" 		<< this->joint_states_.last_q_.data 		<<"\033[0;0m"<<std::endl;
-	std::cout<<"\033[0;33m"	<< "last_q_dot_: \n" 	<< this->joint_states_.last_q_dot_.data 	<<"\033[0;0m"<<std::endl;
-	std::cout<<"\033[0;32m"	<< "current_q_: \n" 	<< this->joint_states_.current_q_.data 		<<"\033[0;0m"<<std::endl;
-	std::cout<<"\033[94m"	<< "current_q_dot_: \n" << this->joint_states_.current_q_dot_.data 	<<"\033[94;0m"<<std::endl;
+	std::cout<<"\033[0;31m"	<< "last_q_:        [ " << this->joint_states_.last_q_.data.transpose() 		<< " ] " <<"\033[0;0m"<<"\n";//<<std::endl;
+	std::cout<<"\033[0;33m"	<< "last_q_dot_:    [ " << this->joint_states_.last_q_dot_.data.transpose() 	<< " ] " <<"\033[0;0m"<<"\n";//<<std::endl;
+	std::cout<<"\033[0;32m"	<< "current_q_:     [ " << this->joint_states_.current_q_.data.transpose() 		<< " ] " <<"\033[0;0m"<<"\n";//<<std::endl;
+	std::cout<<"\033[94m"	<< "current_q_dot_: [ " << this->joint_states_.current_q_dot_.data.transpose() 	<< " ] " <<"\033[94;0m"<<"\n";//<<std::endl;
 */
 
 }
@@ -178,16 +181,14 @@ void MpcController::unitTestFunctionlity(void)
 		//-----------------------------------------------------------
 		KDL::JntArray jnt_angles = KDL::JntArray(controller_param_.dof);
 		jnt_angles(0) = 1.57;	jnt_angles(1) = 1.57;	jnt_angles(2) = 1.57;	jnt_angles(3) = 1.57;
-		std::cout<< "Joint angle set for Jacobian Matrix: \n" << jnt_angles.data << std::endl;
-		std::cout<<"\033[94m" << "\033[1m" << "Jacobian Matrix: \n" << "\033[0;33m"
+		std::cout<< "Joint angle set for Jacobian Matrix: [ " << jnt_angles.data.transpose() << " ] \n";//<<std::endl;
+		std::cout<<"\033[94m" << "\033[1m" << "Jacobian Matrix: \n" << "\033[33;1m"
 				 << kinematics_solver_ptr_->getJacobian(jnt_angles)  <<"\033[0m"<<std::endl;
 
 		//-----------------------------------------------------------
-		std::cout<<"\033[0;31m"	<< "last_q_: \n" 		<< this->joint_states_.last_q_.data 		<<"\033[0;0m"<<std::endl;
-		std::cout<<"\033[0;33m"	<< "last_q_dot_: \n" 	<< this->joint_states_.last_q_dot_.data 	<<"\033[0;0m"<<std::endl;
-		std::cout<<"\033[0;32m"	<< "current_q_: \n" 	<< this->joint_states_.current_q_.data 		<<"\033[0;0m"<<std::endl;
-		std::cout<<"\033[94m"	<< "current_q_dot_: \n" << this->joint_states_.current_q_dot_.data 	<<"\033[94;0m"<<std::endl;
+		std::cout<<"\033[0;31m"	<< "last_q_:        [ " << this->joint_states_.last_q_.data.transpose() 		<< " ] " <<"\033[0;0m"<<"\n";//<<std::endl;
+		std::cout<<"\033[0;33m"	<< "last_q_dot_:    [ " << this->joint_states_.last_q_dot_.data.transpose() 	<< " ] " <<"\033[0;0m"<<"\n";//<<std::endl;
+		std::cout<<"\033[0;32m"	<< "current_q_:     [ " << this->joint_states_.current_q_.data.transpose() 		<< " ] " <<"\033[0;0m"<<"\n";//<<std::endl;
+		std::cout<<"\033[94m"	<< "current_q_dot_: [ " << this->joint_states_.current_q_dot_.data.transpose() 	<< " ] " <<"\033[94;0m"<<"\n";//<<std::endl;
 	}
 }
-
-

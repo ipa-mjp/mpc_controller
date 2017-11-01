@@ -20,6 +20,7 @@
 
 //BOOST
 #include <boost/shared_ptr.hpp>
+#include <boost/local_function.hpp>
 
 #include <mpc_controller/data_types.h>
 #include <mpc_controller/Kinematics/kinematics.h>
@@ -51,10 +52,7 @@ namespace nmpc
 			void jointStateCallBack(const sensor_msgs::JointState::ConstPtr& msg);
 
 			void unitTestFunctionlity(void);
-			ControllerParam getControllerParamObject(void)
-			{
-				return controller_param_;
-			}
+
 	};
 
 	#endif //MPC_CONTROLLER_MPC_CONTROLLER_MPC_CONTROLLER_H
