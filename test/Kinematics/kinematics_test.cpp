@@ -3,7 +3,7 @@
 #include <mpc_controller/mpc_solver/mpc_solver_ACADO.h>
 #include <mpc_controller/Kinematics/kinematics.h>
 //#include <mpc_controller/inverse_jacobian_calculation/inverse_jacobian_calculation.h>
-
+#include <mpc_controller/utilities/mpc_utilities.h>
 
 
 #define _DEBUG_  false
@@ -16,7 +16,8 @@ int main(int argc, char **argv)
 
 	if (node_handler.hasParam("/robot_description"))
 	{
-		Kinematics kinematics("/robot_description","arm_base_link","arm_7_link", "world");
+		Kinematics kinematics;
+		kinematics.initialize("/robot_description","arm_base_link","arm_7_link", "world");
 
 		KDL::JntArray jnt_angles = KDL::JntArray(7);
 		jnt_angles(0) = 1.57;
@@ -53,11 +54,17 @@ int main(int argc, char **argv)
 
 		}*/
 
+		MpcUtilities mpc_util;
+		mpc_util.unitTestFunctionlity();
+		ros::spin();
+
+
+		/*
 		//mpc_solver class
 		ModelPredictiveControlACADO mpc;
 		mpc.setJacobianData(j_mat);
-		Eigen::MatrixXd control_u = mpc.solve();
-
+		Eigen::MatrixXd control_u = mpc.mpc_solve(); //solver();
+		*/
 	}
 return 0;
 }
