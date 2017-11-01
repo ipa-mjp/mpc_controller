@@ -140,7 +140,7 @@ bool Kinematics::initialize(const ControllerParam& controller_param)
 	kinematic_chain = controller_param.chain_			;
 	segments		= kinematic_chain.getNrOfSegments()	;
 
-	if ( segments != 0)
+	if ( segments != 0 )
 	{
 		jnt_rot_angle.resize(segments);
 		for (uint16_t i = 0; i < segments; ++i)
@@ -159,7 +159,7 @@ bool Kinematics::initialize(const ControllerParam& controller_param)
 			kinematic_chain.getSegment(i).getFrameToTip().M.GetRotAngle(rot);
 			jnt_rot_axis.push_back(rot);
 
-			if ( jnts.at(i).getType() == 0 )
+			if ( jnts.at(i).getType() == REVOLUTE )
 				createHomoRoatationMatrix( i );
 		}
 	}
@@ -340,67 +340,16 @@ void Kinematics::forwardKinematics(const KDL::JntArray& jnt_angels)
 	for (uint16_t i = 0; i < this->segments; ++i)
 	{
 		//if revolute joint than multiply with joint angles
-		if (this->jnts.at(i).getType() == 0)
+		if ( this->jnts.at(i).getType() == REVOLUTE )
 		{
 
 			KDL::Frame lcl_homo_mat = KDL::Frame::Identity();
 			this->createRoatationMatrix( jnt_angels(cnt), rot_axis, lcl_homo_mat );
 			this->jnt_homo_mat[i] =	this->jnt_homo_mat[i] * lcl_homo_mat;
 			cnt++;
-
-			/*
-	    	if (_DEBUG_)
-	    	{
-				std::cout<<"\033[36;1m"<<"lcl homo matrix of " << this->jnts.at(i).getName() <<"\033[36;0m"<<std::endl;
-				KDL::Rotation rot_mat = lcl_homo_mat.M;
-				KDL::Vector pos_mat = lcl_homo_mat.p;
-
-					//for (unsigned int i = 0; i < it->)
-					std::cout<<"\033[32;1m"	<<	" rxx "<< rot_mat(0,0) <<	" rxy "<< rot_mat(0,1) <<	" rxz "<< rot_mat(0,2)	<< "\n"
-																<<	" ryx "<< rot_mat(1,0) <<	" ryy "<< rot_mat(1,1) <<	" ryz "<< rot_mat(1,2)	<< "\n"
-																<<	" rzx "<< rot_mat(2,0) <<	" rzy "<< rot_mat(2,1) <<	" rzz "<< rot_mat(2,2)	<< "\n"
-																<<	" px "<< pos_mat.x() <<	" py "<< pos_mat.y() <<	" pz "<< pos_mat.z()
-							<<"\033[32;0m"<<std::endl;
-	    	}
-
-
-
-	    	if (_DEBUG_)
-	    	{
-				std::cout<<"\033[36;1m"<<"New homo matrix of " << this->jnts.at(i).getName() <<"\033[36;0m"<<std::endl;
-				KDL::Rotation rot_mat = this->jnt_homo_mat.at(i).M;
-				KDL::Vector pos_mat = this->jnt_homo_mat.at(i).p;
-
-					//for (unsigned int i = 0; i < it->)
-					std::cout<<"\033[32;1m"	<<	" rxx "<< rot_mat(0,0) <<	" rxy "<< rot_mat(0,1) <<	" rxz "<< rot_mat(0,2)	<< "\n"
-																<<	" ryx "<< rot_mat(1,0) <<	" ryy "<< rot_mat(1,1) <<	" ryz "<< rot_mat(1,2)	<< "\n"
-																<<	" rzx "<< rot_mat(2,0) <<	" rzy "<< rot_mat(2,1) <<	" rzz "<< rot_mat(2,2)	<< "\n"
-																<<	" px "<< pos_mat.x() <<	" py "<< pos_mat.y() <<	" pz "<< pos_mat.z()
-							<<"\033[32;0m"<<std::endl;
-	    	}*/
-
-
-
 		}
-
 		fk_mat = fk_mat * this->jnt_homo_mat[i];
 		jnt_fk_mat.push_back(fk_mat);
-
-		/*
-    	if (_DEBUG_)
-    	{
-			std::cout<<"\033[36;1m"<<"fk matrix of " << this->jnts.at(i).getName() <<"\033[36;0m"<<std::endl;
-			KDL::Rotation rot_mat = fk_mat.M;
-			KDL::Vector pos_mat = fk_mat.p;
-
-				//for (unsigned int i = 0; i < it->)
-				std::cout<<"\033[32;1m"	<<	" rxx "<< rot_mat(0,0) <<	" rxy "<< rot_mat(0,1) <<	" rxz "<< rot_mat(0,2)	<< "\n"
-										<<	" ryx "<< rot_mat(1,0) <<	" ryy "<< rot_mat(1,1) <<	" ryz "<< rot_mat(1,2)	<< "\n"
-										<<	" rzx "<< rot_mat(2,0) <<	" rzy "<< rot_mat(2,1) <<	" rzz "<< rot_mat(2,2)	<< "\n"
-										<<	" px "<< pos_mat.x() <<	" py "<< pos_mat.y() <<	" pz "<< pos_mat.z()
-						<<"\033[32;0m"<<std::endl;
-    	}*/
-
 	}
 
 	this->fk_mat = fk_mat;
@@ -498,13 +447,13 @@ void Kinematics::computeJacobian(const KDL::JntArray& jnt_angels)
 		Cart3Vector J_v(0,0,0), J_o(0,0,0);
 		if (i == 0)
 		{
-			if ( this-> jnts.at(i).getType() == 0 )	//revolute joint
+			if ( this-> jnts.at(i).getType() == REVOLUTE )	//revolute joint
 			{
 				J_v = z_0.cross( p );
 				J_o = z_0;
 			}
 
-			if ( this-> jnts.at(i).getType() == 8 )	//prismatic joint
+			if ( this-> jnts.at(i).getType() == PRESMATIC )	//prismatic joint
 			{
 				J_v = z_0;
 				J_o = p_0;
@@ -522,13 +471,13 @@ void Kinematics::computeJacobian(const KDL::JntArray& jnt_angels)
 			z_i(0) = jnt_fk_mat.at(i).M(0,2);		z_i(1) = jnt_fk_mat.at(i).M(1,2);		z_i(2) = jnt_fk_mat.at(i).M(2,2);
 			p_i(0) = jnt_fk_mat.at(i).p(0);			p_i(1) = jnt_fk_mat.at(i).p(1);		p_i(2) = jnt_fk_mat.at(i).p(2);
 
-			if ( this-> jnts.at(i).getType() == 0 )	//revolute joint
+			if ( this-> jnts.at(i).getType() == REVOLUTE )	//revolute joint
 			{
 				J_v = z_i.cross( p - p_i );
 				J_o = z_i;
 			}
 
-			if ( this-> jnts.at(i).getType() == 8 )	//prismatic joint
+			if ( this-> jnts.at(i).getType() == PRESMATIC )	//prismatic joint
 			{
 				J_v = z_i;
 				J_o = p_0;
@@ -656,13 +605,11 @@ void Kinematics::getJntsInfo(std::vector<KDL::Joint>& jnts)
 	jnts = this->jnts;
 }
 
-inline
 KDL::Frame Kinematics::getForwardKinematics(void)
 {
 	return this->fk_mat;
 }
 
-inline
 void Kinematics::getForwardKinematics(KDL::Frame& fk_mat)
 {
 	fk_mat = this->fk_mat;
@@ -676,7 +623,6 @@ Eigen::MatrixXd Kinematics::getJacobian(const KDL::JntArray& jnt_angles)
 	return this->JacobianMatrix;
 }
 
-inline
 void Kinematics::getJacobian(const KDL::JntArray& jnt_angles, Eigen::MatrixXd& j_mat)
 {
 	this->computeJacobian(jnt_angles);
