@@ -1,5 +1,6 @@
 
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <mpc_controller/mpc_solver/mpc_solver_ACADO.h>
 //#include <mpc_controller/inverse_jacobian_calculation/inverse_jacobian_calculation.h>
 #include <mpc_controller/mpc_controller/mpc_controller.h>
@@ -12,13 +13,16 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "kinematic_test");
 	ros::NodeHandle node_handler;
+	ros::AsyncSpinner spinner(4); // Use 4 threads, be aware to use it
+	spinner.start();
 
 	if (node_handler.hasParam("/robot_description"))
 	{
 		MpcController mpc_util;
 		mpc_util.initialize();
-		mpc_util.unitTestFunctionlity();
 		ros::Duration(5.0).sleep();
+		mpc_util.unitTestFunctionlity();
+		//ros::waitForShutdown();
 
 	}
 return 0;
