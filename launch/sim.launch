@@ -11,6 +11,8 @@
 	<arg name="ipa_sim" default="true"/>
 	<arg name="paused" default="false"/>
 	
+	<rosparam command="load" file="$(find mpc_controller)/config/mpc_utilities.yaml" />
+	
 	<!-- Simulation -->
 	<include file="$(find cob_bringup_sim)/launch/robot.launch" if="$(arg ipa_sim)">
 		<arg name="robot" value="$(arg robot)"/>
