@@ -7,7 +7,7 @@
 #include <vector>
 #include <Eigen/Core>
 #include <kdl/jntarray.hpp>
-#include <kdl/chainjnttojacsolver.hpp>
+#include <kdl/chain.hpp>
 
 //Also known as DifferntialState in ACADO Toolkit
 struct JointStates
@@ -57,6 +57,7 @@ struct ControllerParam
 	std::vector<std::string> jnts_name;
 
 	LimiterParam lmt_param_;
+	KDL::Chain chain_;
 
 }; 
 
