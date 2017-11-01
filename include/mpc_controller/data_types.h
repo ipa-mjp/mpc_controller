@@ -9,6 +9,16 @@
 #include <kdl/jntarray.hpp>
 #include <kdl/chain.hpp>
 
+//TYPE OF JOINT USED FOR COMPUTATION OF FORWARD KINEMATICS
+enum JointType
+{
+	REVOLUTE 	= 0,
+	PRESMATIC 	= 8,
+	FIXED		= 5
+};
+
+//------------------------------------------------------------------------
+
 //Also known as DifferntialState in ACADO Toolkit
 struct JointStates
 {
