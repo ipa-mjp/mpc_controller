@@ -28,6 +28,7 @@ namespace nmpc {
 			void setJacobianData(const Matrix6Xd_t& jacobian_data);
 			Eigen::MatrixXd solve(void);//(const Cart6dVector& in_cart_velocities, const JointStates& joint_states);
 
+			Eigen::MatrixXd mpc_solve(void);
 		private:
 
 			Matrix6Xd_t 	jacobian_data_	;	//Jacobian matrix
