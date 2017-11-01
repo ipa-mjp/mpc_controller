@@ -46,17 +46,16 @@ namespace nmpc
 	class Kinematics
 	{
 	private:
-		ros::NodeHandle node_handle;
+
+		unsigned int segments;
+		unsigned int dof;
+
 		std::string chain_base_link;
 		std::string chain_tip_link;
 		std::string root_frame;
-		unsigned int segments;
-		unsigned int dof;
-		std::vector<std::string> jnt_type;
-		//std::vector<std::vector<uint16_t> > jnt_axis;
+
 		std::vector<KDL::Vector> jnt_rot_axis;
 		std::vector<std::vector<double> > jnt_rot_angle;
-
 
 		KDL::Chain	kinematic_chain;
 		std::vector<KDL::Frame>	frames;
@@ -75,7 +74,21 @@ namespace nmpc
 
 	public:
 
-		Kinematics(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="arm_base_link", const std::string& chain_tip_link="arm_7_link", const std::string& root_frame="world");
+		//Kinematics(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="arm_base_link", const std::string& chain_tip_link="arm_7_link", const std::string& root_frame="world");
+
+		Kinematics():
+			dof(0),
+			segments(0),
+			chain_base_link("arm_1_link"),
+			chain_tip_link("arm_7_link"),
+			root_frame("world")
+		{};
+		~Kinematics(){};
+
+		void initialize(const std::string rbt_description = "/robot_description", const std::string& chain_base_link="arm_base_link", const std::string& chain_tip_link="arm_7_link", const std::string& root_frame="world");
+		void initialize(const KDL::Chain& kinematic_chain, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame );
+		void initialize(const urdf::Model& urdf_model, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame );
+
 
 		void forwardKinematics(const KDL::JntArray& jnt_angels);
 

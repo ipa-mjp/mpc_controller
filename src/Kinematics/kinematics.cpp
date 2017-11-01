@@ -3,13 +3,12 @@
 
 using namespace nmpc;
 
-Kinematics::Kinematics(const std::string rbt_description , const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame)
+void Kinematics::initialize(const std::string rbt_description , const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame)
 {
 	//base, tip link and root frame
 	this->chain_base_link = chain_base_link;
 	this->chain_tip_link = chain_tip_link;
 	this->root_frame = root_frame;
-	this->dof = 0;
 
 	//tree from parameter server
 	KDL::Tree kdl_tree;
@@ -24,28 +23,10 @@ Kinematics::Kinematics(const std::string rbt_description , const std::string& ch
     this->segments = this->kinematic_chain.getNrOfSegments();
     this->jnt_rot_angle.resize(segments);
 
-    //this->jnt_axis.resize(this->segments);
-
     for (uint16_t i = 0; i< this->segments ; ++i)
     {
     	//joints info
     	this->jnts.push_back( this->kinematic_chain.getSegment(i).getJoint());
-
-    	//type of joint
-    	if ( this-> jnts.at(i).getType() == 0)
-    		this->jnt_type.push_back( "revolute" );
-
-    	if ( this-> jnts.at(i).getType() == 8)
-    		this->jnt_type.push_back( "fixed" );
-
-    	else	//todo need to check
-    		this->jnt_type.push_back( "prismatic" );
-
-    	/*
-    	//if rot than about axis
-    	this->jnt_axis[i].push_back( this->jnts.at(i).JointAxis().x() );
-    	this->jnt_axis[i].push_back( this->jnts.at(i).JointAxis().y() );
-    	this->jnt_axis[i].push_back( this->jnts.at(i).JointAxis().z() );*/
 
     	//frame , homo matrix of each frame
     	this->frames.push_back( this->kinematic_chain.getSegment(i).getFrameToTip() );
@@ -53,7 +34,6 @@ Kinematics::Kinematics(const std::string rbt_description , const std::string& ch
     	double roll,pitch,yaw;
     	this->kinematic_chain.getSegment(i).getFrameToTip().M.GetRPY(roll,pitch,yaw);
     	this->jnt_rot_angle.at(i).push_back(roll);	this->jnt_rot_angle.at(i).push_back(pitch);		this->jnt_rot_angle.at(i).push_back(yaw);
-
 
     	// rot angle, axis of rotation
     	KDL::Vector rot;
@@ -105,6 +85,49 @@ Kinematics::Kinematics(const std::string rbt_description , const std::string& ch
 
 		this->kdl_computeJacobian(jnt_angles);
     }
+}
+
+void Kinematics::initialize(const KDL::Chain& kinematic_chain, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame)
+{
+	//base, tip link and root frame
+	this->chain_base_link = chain_base_link;
+	this->chain_tip_link = chain_tip_link;
+	this->root_frame = root_frame;
+
+	//Kinematic Chain
+	this->kinematic_chain = kinematic_chain;
+
+	//segments
+	this->segments = this->kinematic_chain.getNrOfSegments();
+	this->jnt_rot_angle.resize(segments);
+
+	for (uint16_t i = 0; i< this->segments ; ++i)
+	{
+		//joints info
+		this->jnts.push_back( this->kinematic_chain.getSegment(i).getJoint());
+
+		//frame , homo matrix of each frame
+		this->frames.push_back( this->kinematic_chain.getSegment(i).getFrameToTip() );
+
+		double roll,pitch,yaw;
+		this->kinematic_chain.getSegment(i).getFrameToTip().M.GetRPY(roll,pitch,yaw);
+		this->jnt_rot_angle.at(i).push_back(roll);	this->jnt_rot_angle.at(i).push_back(pitch);		this->jnt_rot_angle.at(i).push_back(yaw);
+
+		// rot angle, axis of rotation
+		KDL::Vector rot;
+		this->kinematic_chain.getSegment(i).getFrameToTip().M.GetRotAngle(rot);
+		this->jnt_rot_axis.push_back(rot);
+	    	//std::cout<<rot.x()<<" , "<<rot.y()<<" , "<<rot.z()<<std::endl;
+
+		this->jnt_homo_mat.push_back(this->frames.at(i));
+
+		if (this->jnts.at(i).getType() == 0)	//revolute joint	//todo consider test for presmatic joint
+		{
+			this->createHomoRoatationMatrix( i );
+	    	this->dof++;						// consider revoulte joint as dof
+	    }
+
+	}
 }
 
 void Kinematics::createHomoRoatationMatrix(const uint16_t& seg_nr)
