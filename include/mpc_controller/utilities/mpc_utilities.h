@@ -45,7 +45,7 @@ namespace nmpc
 			~MpcUtilities() {};
 
 			bool initialize(void);
-			void jointStateCallBack(const sensor_msgs::JointStateConstPtr& msg);
+			void jointStateCallBack(const sensor_msgs::JointState::ConstPtr& msg);
 
 			void unitTestFunctionlity(void);
 

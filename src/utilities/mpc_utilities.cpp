@@ -87,7 +87,7 @@ bool MpcUtilities::initialize(void)
 	return true;
 }
 
-void MpcUtilities::jointStateCallBack(const sensor_msgs::JointStateConstPtr& msg)
+void MpcUtilities::jointStateCallBack(const sensor_msgs::JointState::ConstPtr&  msg)
 {
 
 	std::cout<<"\033[94m" << "\033[1m" <<" MpcUtilities... jointStateCallBack "<<"\033[0;0m"<<std::endl;
@@ -122,6 +122,13 @@ void MpcUtilities::jointStateCallBack(const sensor_msgs::JointStateConstPtr& msg
     	this->joint_states_.current_q_ = q_lcl;
     	this->joint_states_.current_q_dot_ = q_dot_lcl;
     }
+/*
+	//-----------------------------------------------------------
+	std::cout<<"\033[0;31m"	<< "last_q_: \n" 		<< this->joint_states_.last_q_.data 		<<"\033[0;0m"<<std::endl;
+	std::cout<<"\033[0;33m"	<< "last_q_dot_: \n" 	<< this->joint_states_.last_q_dot_.data 	<<"\033[0;0m"<<std::endl;
+	std::cout<<"\033[0;32m"	<< "current_q_: \n" 	<< this->joint_states_.current_q_.data 		<<"\033[0;0m"<<std::endl;
+	std::cout<<"\033[94m"	<< "current_q_dot_: \n" << this->joint_states_.current_q_dot_.data 	<<"\033[94;0m"<<std::endl;
+*/
 
 }
 
