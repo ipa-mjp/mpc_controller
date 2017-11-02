@@ -16,6 +16,9 @@
 
 #include <ros/ros.h>
 
+#include <iostream>
+#include <fstream>
+
 namespace nmpc {
 
 	using namespace ACADO;
@@ -36,7 +39,7 @@ namespace nmpc {
 
 			//Matrix6Xd_t 	jacobian_data_	;	//Jacobian matrix
 			JacobianMatrix	jacobian_data_	;	//Jacobian matrix
-			JInvBySVD 		jInc_cals_		;	//Computation PsudoInverse of jacobian matrix using SVD decomposition
+			 JInvBySVD 		jInc_cals_		;	//Computation PsudoInverse of jacobian matrix using SVD decomposition
 	};
 
 	#endif //MPC_CONTROLLER_MPC_SOLVER_ACADO_MPC_SOLVER_ACADO_H
