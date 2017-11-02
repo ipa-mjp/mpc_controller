@@ -5,7 +5,19 @@
 using namespace nmpc;
 
 
-void ModelPredictiveControlACADO::setJacobianData(const Matrix6Xd_t& jacobian_data)
+bool ModelPredictiveControlACADO::initializeClassMembers(const JacobianMatrix& jacobian_mat)
+{
+	if (jacobian_mat.isZero())	//if jacobian data not filled
+	{
+		return false;
+	}
+
+	jacobian_data_ = jacobian_mat;
+	return true;
+}
+
+
+void ModelPredictiveControlACADO::setJacobianData(const JacobianMatrix& jacobian_data)
 {
 	this->jacobian_data_ = jacobian_data;
 }
@@ -35,12 +47,12 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 
 	//CALCULATE JACOBIAN MATRIX AND STORE INTO ACADO VARIABLES/MATRIX
 	//---------------------------------------------------------------
-	Eigen::MatrixXd jInv = this->jInc_cals_.calculate(this->jacobian_data_);
+	//Eigen::MatrixXd jInv = this->jInc_cals_.calculate(this->jacobian_data_);
 
 	DMatrix J_inv;	// Jacobian inverse
 	DMatrix J;		// Jacobian
 
-	J_inv = jInv;
+	//J_inv = jInv;
 	J = this->jacobian_data_;
 
 	//READ A VELOCITY VECTOR
@@ -74,6 +86,7 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 	algorithm.set( MAX_NUM_ITERATIONS, 20 )					;
 	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING )	;
 	algorithm.set( LEVENBERG_MARQUARDT, 1e-5 )				;
+	//algorithm.set( INTEGRATOR_TYPE, INT_RK45 )				;
 
 	ros::Time begin = ros::Time::now();
 
@@ -99,7 +112,7 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
   return controls_.getFirstVector();
 }
 
-
+/*
 Eigen::MatrixXd ModelPredictiveControlACADO::mpc_solve(void)//(const Cart6dVector& in_cart_velocities, const JointStates& joint_states)
 {
 
@@ -266,7 +279,7 @@ Eigen::MatrixXd ModelPredictiveControlACADO::mpc_solve(void)//(const Cart6dVecto
     std::cout<< controls_.getFirstVector() << std::endl;
 
   return controls_.getFirstVector();
-  */
+  //////
 }
-
+*/
 

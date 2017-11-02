@@ -25,13 +25,17 @@ namespace nmpc {
 		public:
 
 			ModelPredictiveControlACADO() = default;
-			void setJacobianData(const Matrix6Xd_t& jacobian_data);
+
+			bool initializeClassMembers(const JacobianMatrix& jacobian_mat);
+
+			void setJacobianData(const JacobianMatrix& jacobian_data);
 			Eigen::MatrixXd solve(void);//(const Cart6dVector& in_cart_velocities, const JointStates& joint_states);
 
 			Eigen::MatrixXd mpc_solve(void);
 		private:
 
-			Matrix6Xd_t 	jacobian_data_	;	//Jacobian matrix
+			//Matrix6Xd_t 	jacobian_data_	;	//Jacobian matrix
+			JacobianMatrix	jacobian_data_	;	//Jacobian matrix
 			JInvBySVD 		jInc_cals_		;	//Computation PsudoInverse of jacobian matrix using SVD decomposition
 	};
 
