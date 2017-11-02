@@ -623,6 +623,7 @@ Eigen::MatrixXd Kinematics::getJacobian(const KDL::JntArray& jnt_angles)
 	return this->JacobianMatrix;
 }
 
+inline
 void Kinematics::getJacobian(const KDL::JntArray& jnt_angles, Eigen::MatrixXd& j_mat)
 {
 	this->computeJacobian(jnt_angles);

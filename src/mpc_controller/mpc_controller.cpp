@@ -89,7 +89,7 @@ bool MpcController::initialize(void)
 	this->jointState_sub_ = nh_.subscribe("/joint_states", 1, &MpcController::jointStateCallBack, this);
 
 	//Info message for initialized utilities class
-	std::cout<<"\033[36;1m" <<"MpcUtilities... initialization done!" <<"\033[36;0m"<<std::endl;
+	std::cout<<"\033[36;1m" <<"MpcController... initialization done!" <<"\033[36;0m"<<std::endl;
 
 	return true;
 }

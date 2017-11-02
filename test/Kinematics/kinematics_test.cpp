@@ -13,16 +13,29 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "kinematic_test");
 	ros::NodeHandle node_handler;
-	ros::AsyncSpinner spinner(4); // Use 4 threads, be aware to use it
-	spinner.start();
+	//ros::AsyncSpinner spinner(4); // Use 4 threads, be aware to use it
+	//spinner.start();
 
 	if (node_handler.hasParam("/robot_description"))
 	{
+		/*
 		MpcController mpc_util;
 		mpc_util.initialize();
-		ros::Duration(5.0).sleep();
+		//ros::Duration(5.0).sleep();
 		mpc_util.unitTestFunctionlity();
 		//ros::waitForShutdown();
+		*/
+
+		Kinematics kin_solver;
+		kin_solver.initialize();
+
+		KDL::JntArray jnt_angles = KDL::JntArray(7);
+		jnt_angles(0) = 1.57;	jnt_angles(1) = 1.57;	jnt_angles(2) = 1.57;	jnt_angles(3) = 1.57;
+		Eigen::MatrixXd J = kin_solver.getJacobian(jnt_angles);
+
+		ModelPredictiveControlACADO acado_solver_;
+		acado_solver_.initializeClassMembers(J);
+		acado_solver_.solve();
 
 	}
 return 0;
