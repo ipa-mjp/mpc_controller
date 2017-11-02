@@ -30,29 +30,20 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 
     // INTRODUCE THE VARIABLES:
     // ----------------------------
-	DifferentialState	x ( "", m, 1 )	;	//differential state, in our case it is differential velocity
-	DifferentialState	y				;	//differential state, NONLINEAR-LEAST SEQUARE PROBLEM
+	DifferentialState	q ( "", m, 1 )	;	//differential state, in our case it is differential velocity
+	DifferentialState	residual_error		;	//differential state, NONLINEAR-LEAST SEQUARE PROBLEM
 
-	Control u ("", n , 1);					//control variable, in our case joint velocity
+	Control q_dot ("", n , 1);					//control variable, in our case joint velocity
 
 	DifferentialEquation f;					//differential equation
 
-	x.clearStaticCounters();
-	y.clearStaticCounters();
-	u.clearStaticCounters();
-
-	const double t_start = 0.0;
-	const double t_end 	 = 1.0;
-	const int horizon    = 10;
+	q.clearStaticCounters();
+	residual_error.clearStaticCounters();
+	q_dot.clearStaticCounters();
 
 	//CALCULATE JACOBIAN MATRIX AND STORE INTO ACADO VARIABLES/MATRIX
 	//---------------------------------------------------------------
-	//Eigen::MatrixXd jInv = this->jInc_cals_.calculate(this->jacobian_data_);
-
-	DMatrix J_inv;	// Jacobian inverse
 	DMatrix J;		// Jacobian
-
-	//J_inv = jInv;
 	J = this->jacobian_data_;
 
 	//READ A VELOCITY VECTOR
@@ -60,27 +51,33 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 	DVector x0;	DVector in_cart_velocities(6);
 	in_cart_velocities.setAll(0.0);
 	in_cart_velocities(0) = 1.00;//0.454075;
+	in_cart_velocities(1) = 1.00;
+	in_cart_velocities(2) = 0.00;
 	//in_cart_velocities(1) = 0.2905;
-	in_cart_velocities(5) = 0.0;
+	in_cart_velocities(5) = 1.0;
 	x0 = in_cart_velocities;
 
 	DVector xEnd; xEnd = in_cart_velocities * 0;
 
 	//DEFINE A DIFFERENTIAL EQUATION
 	//----------------------------------------------------------------
-	f << dot(x) == J * u;
-	f << dot(y) == 0.5*( (x-x0).transpose() * (x-x0));	// minimize in velocity error, NONLINEAR LEAST SQUARE PROBLEM
+	f << dot(q) == J * q_dot;
+	f << dot(residual_error) == 0.5*( (q-x0).transpose() * (q-x0));	// minimize in velocity error, NONLINEAR LEAST SQUARE PROBLEM
 
 	// DEFINE AN OPTIMAL CONTROL PROBLEM:
 	// ----------------------------------
+	const double t_start = 0.0;
+	const double t_end 	 = 1.0;
+	const int horizon    = 10;
+
 	OCP ocp( t_start, t_end, horizon );
 
-	ocp.minimizeMayerTerm( y );     // running cost
+	ocp.minimizeMayerTerm( residual_error );     // running cost
 	ocp.subjectTo( f );
 	//ocp.subjectTo( AT_START  , x == x0);
-	ocp.subjectTo( AT_END  , x == xEnd);
-	ocp.subjectTo( AT_START, y == (double)(x0.transpose() * x0));
-	ocp.subjectTo( -2 <= u <= 5);
+	ocp.subjectTo( AT_END  , dot(q) == xEnd);
+	//ocp.subjectTo( AT_START, residual_error == (double)(x0.transpose() * x0));
+	//ocp.subjectTo( -2 <= q_dot <= 5);	//temp set
 
     // DEFINE AN OPTIMIZATION ALGORITHM AND SOLVE THE OCP:
     // ---------------------------------------------------
@@ -91,28 +88,7 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 	//algorithm.set( INTEGRATOR_TYPE, INT_RK45 )				;
 
 	ros::Time begin = ros::Time::now();
-/*
-	GnuplotWindow window1;
-		//window1.addSubplot(x, "DIFFERENTIAL STATE  x");
-	    //window1.addSubplot(y,"DIFFERENTIAL STATE  y");
-	    window1.addSubplot(u,"CONTROL  u"   );
 
-	 GnuplotWindow window2(PLOT_AT_EACH_ITERATION);
-		window2.addSubplot(x, "DIFFERENTIAL STATE  x");
-		//window1.addSubplot(y,"DIFFERENTIAL STATE  y");
-		//window1.addSubplot(u,"CONTROL  u"   );
-
-
-	algorithm << window1;
-//	algorithm << window2;
-
-
-    LogRecord logRecord( LOG_AT_EACH_ITERATION );
-    logRecord.addItem( LOG_DIFFERENTIAL_STATES, "STATES" );
-    logRecord.addItem( LOG_CONTROLS, "CONTROLS" );
-
-    algorithm << logRecord;
-*/
 	algorithm.solve();
 
     ros::Time end = ros::Time::now();
@@ -123,36 +99,11 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
     algorithm.getControls(controls_);
     algorithm.getDifferentialStates(diffStates);
 
-
 	GnuplotWindow window;
-		window.addSubplot(diffStates(0), "DIFFERENTIAL STATE  x");
-	    window.addSubplot(diffStates(1),"DIFFERENTIAL STATE  y");
-	    window.addSubplot(controls_,"CONTROL  u"   );
+		window.addSubplot(diffStates(0), "DIFFERENTIAL STATE  q");
+	    window.addSubplot(diffStates(1),"DIFFERENTIAL STATE  Error");
+	    window.addSubplot(controls_,"CONTROL  q_dot"   );
 	window.plot( );
-/*
-	GnuplotWindow window5;
-	algorithm.getLogRecord( logRecord );
-		logRecord.getAll(LOG_DIFFERENTIAL_STATES, diffStates1);
-		logRecord.getAll(LOG_CONTROLS, logcontrols_);
-		//logRecord.print();
-
-	std::ofstream myStatefile, myConrolFile;
-	myStatefile.open("/home/bfb-ws/mpc_ws/src/mpc_controller/results/states.txt");
-	for (uint16_t i = 0; i < diffStates1.getNumRows(); ++i)
-	{
-		myStatefile << diffStates1.getMatrix(i) << std::endl;
-		//std::cout << diffStates1.getMatrix(i) << std::endl;
-	}
-	myStatefile.close();
-	myStatefile.open("/home/bfb-ws/mpc_ws/src/mpc_controller/results/control.txt");
-	for (uint16_t i = 0; i < logcontrols_.getNumRows(); ++i)
-	{
-		myConrolFile << logcontrols_.getMatrix(i) << std::endl;
-		//std::cout << diffStates1.getMatrix(i) << std::endl;
-	}
-	myConrolFile.close();
-    std::cout<< controls_.getMatrix(0.5) << std::endl;
-*/
 
   return controls_.getFirstVector();
 }

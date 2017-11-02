@@ -16,9 +16,6 @@
 
 #include <ros/ros.h>
 
-#include <iostream>
-#include <fstream>
-
 namespace nmpc {
 
 	using namespace ACADO;
