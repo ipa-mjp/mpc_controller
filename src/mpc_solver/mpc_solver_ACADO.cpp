@@ -31,7 +31,7 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
     // INTRODUCE THE VARIABLES:
     // ----------------------------
 	DifferentialState	x ( "", m, 1 )	;	//differential state, in our case it is differential velocity
-	DifferentialState	y				;	//differential state
+	DifferentialState	y				;	//differential state, NONLINEAR-LEAST SEQUARE PROBLEM
 
 	Control u ("", n , 1);					//control variable, in our case joint velocity
 
@@ -59,8 +59,8 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 	//-----------------------------------------------------------------
 	DVector x0;	DVector in_cart_velocities(6);
 	in_cart_velocities.setAll(0.0);
-	in_cart_velocities(0) = 0.454075;
-	in_cart_velocities(1) = 0.0;
+	in_cart_velocities(0) = 1.00;//0.454075;
+	//in_cart_velocities(1) = 0.2905;
 	in_cart_velocities(5) = 0.0;
 	x0 = in_cart_velocities;
 
@@ -69,7 +69,7 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 	//DEFINE A DIFFERENTIAL EQUATION
 	//----------------------------------------------------------------
 	f << dot(x) == J * u;
-	f << dot(y) == 0.5*( (x-x0).transpose() * (x-x0));	// minimize in velocity error
+	f << dot(y) == 0.5*( (x-x0).transpose() * (x-x0));	// minimize in velocity error, NONLINEAR LEAST SQUARE PROBLEM
 
 	// DEFINE AN OPTIMAL CONTROL PROBLEM:
 	// ----------------------------------
@@ -77,37 +77,82 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 
 	ocp.minimizeMayerTerm( y );     // running cost
 	ocp.subjectTo( f );
+	//ocp.subjectTo( AT_START  , x == x0);
 	ocp.subjectTo( AT_END  , x == xEnd);
 	ocp.subjectTo( AT_START, y == (double)(x0.transpose() * x0));
+	ocp.subjectTo( -2 <= u <= 5);
 
     // DEFINE AN OPTIMIZATION ALGORITHM AND SOLVE THE OCP:
     // ---------------------------------------------------
 	OptimizationAlgorithm algorithm(ocp)					;
 	algorithm.set( MAX_NUM_ITERATIONS, 20 )					;
-	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING )	;
+	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING );//SINGLE_SHOOTING )	;
 	algorithm.set( LEVENBERG_MARQUARDT, 1e-5 )				;
 	//algorithm.set( INTEGRATOR_TYPE, INT_RK45 )				;
 
 	ros::Time begin = ros::Time::now();
+/*
+	GnuplotWindow window1;
+		//window1.addSubplot(x, "DIFFERENTIAL STATE  x");
+	    //window1.addSubplot(y,"DIFFERENTIAL STATE  y");
+	    window1.addSubplot(u,"CONTROL  u"   );
 
+	 GnuplotWindow window2(PLOT_AT_EACH_ITERATION);
+		window2.addSubplot(x, "DIFFERENTIAL STATE  x");
+		//window1.addSubplot(y,"DIFFERENTIAL STATE  y");
+		//window1.addSubplot(u,"CONTROL  u"   );
+
+
+	algorithm << window1;
+//	algorithm << window2;
+
+
+    LogRecord logRecord( LOG_AT_EACH_ITERATION );
+    logRecord.addItem( LOG_DIFFERENTIAL_STATES, "STATES" );
+    logRecord.addItem( LOG_CONTROLS, "CONTROLS" );
+
+    algorithm << logRecord;
+*/
 	algorithm.solve();
 
     ros::Time end = ros::Time::now();
     ros::Duration d = end-begin;
     ROS_WARN_STREAM("Time: " << d.toSec());
 
-    VariablesGrid controls_, diffStates ;
+    VariablesGrid controls_, diffStates; //, diffStates1, logcontrols_;
     algorithm.getControls(controls_);
     algorithm.getDifferentialStates(diffStates);
+
 
 	GnuplotWindow window;
 		window.addSubplot(diffStates(0), "DIFFERENTIAL STATE  x");
 	    window.addSubplot(diffStates(1),"DIFFERENTIAL STATE  y");
 	    window.addSubplot(controls_,"CONTROL  u"   );
 	window.plot( );
+/*
+	GnuplotWindow window5;
+	algorithm.getLogRecord( logRecord );
+		logRecord.getAll(LOG_DIFFERENTIAL_STATES, diffStates1);
+		logRecord.getAll(LOG_CONTROLS, logcontrols_);
+		//logRecord.print();
 
-
-    std::cout<< controls_.getFirstVector() << std::endl;
+	std::ofstream myStatefile, myConrolFile;
+	myStatefile.open("/home/bfb-ws/mpc_ws/src/mpc_controller/results/states.txt");
+	for (uint16_t i = 0; i < diffStates1.getNumRows(); ++i)
+	{
+		myStatefile << diffStates1.getMatrix(i) << std::endl;
+		//std::cout << diffStates1.getMatrix(i) << std::endl;
+	}
+	myStatefile.close();
+	myStatefile.open("/home/bfb-ws/mpc_ws/src/mpc_controller/results/control.txt");
+	for (uint16_t i = 0; i < logcontrols_.getNumRows(); ++i)
+	{
+		myConrolFile << logcontrols_.getMatrix(i) << std::endl;
+		//std::cout << diffStates1.getMatrix(i) << std::endl;
+	}
+	myConrolFile.close();
+    std::cout<< controls_.getMatrix(0.5) << std::endl;
+*/
 
   return controls_.getFirstVector();
 }
