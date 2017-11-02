@@ -8,6 +8,7 @@
 #include <Eigen/Core>
 #include <kdl/jntarray.hpp>
 #include <kdl/chain.hpp>
+#include <acado/acado_toolkit.hpp>
 
 //TYPE OF JOINT USED FOR COMPUTATION OF FORWARD KINEMATICS
 enum JointType
@@ -16,6 +17,17 @@ enum JointType
 	PRESMATIC 	= 8,
 	FIXED		= 5
 };
+
+
+/*
+//TYPE OF JOINT USED FOR COMPUTATION OF FORWARD KINEMATICS
+struct JointType
+{
+	static constexpr uint16_t REVOLUTE = 0;
+	static constexpr uint16_t PRESMATIC= 8;
+	static constexpr uint16_t FIXED	   = 5;
+};
+*/
 
 //------------------------------------------------------------------------
 
@@ -73,8 +85,45 @@ struct ControllerParam
 
 //----------------------------------------------------------------------------------------------------------------------------
 
+struct AcadoConfigParam
+{
+	uint16_t initial_max_num_iterations_;
+
+	uint16_t discretization_steps_;
+	uint16_t min_discretization_steps_;
+	uint16_t max_discretization_steps_;
+
+	double initial_kkt_tolerance_;
+	double max_time_horizon_;
+
+	//hard constraints
+	double x_at_start_;
+	double x_at_end_;
+	double u_at_start_;
+	double u_at_end_;
+
+	//trajectories: state, controls, parameters
+	ACADO::VariablesGrid state_trajectory_;
+	ACADO::VariablesGrid control_trajectory_;
+	ACADO::VariablesGrid parameter_trajectory_;
+
+	//initialization for states, controls and parameters
+	ACADO::VariablesGrid state_initialize_;
+	ACADO::VariablesGrid control_initialize_;
+	ACADO::VariablesGrid parameter_initialize_;
+
+	//output for states, controls and parameters
+	ACADO::VariablesGrid state_output_;
+	ACADO::VariablesGrid control_output_;
+	ACADO::VariablesGrid parameter_output_;
+
+};
+
+
+//---------------------------------------------------------------------------
 typedef Eigen::Matrix<double, 6, Eigen::Dynamic> 	Matrix6Xd_t		;
-typedef Eigen::Matrix<double, 6, 7> 				JacobianMatrix	;	//Jacobian matrix for care-o-bot with 7 dof
+typedef Eigen::MatrixXd								JacobianMatrix	;
+//typedef Eigen::Matrix<double, 6, 7> 				JacobianMatrix	;	//Jacobian matrix for care-o-bot with 7 dof
 typedef Eigen::Matrix<double, 6, 1> 				Cart6dVector	;
 typedef Eigen::Matrix<double, 3, 1> 				Cart3dVector	;
 
