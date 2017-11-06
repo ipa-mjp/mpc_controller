@@ -90,7 +90,6 @@ namespace nmpc
 		void initialize(const KDL::Chain& kinematic_chain, const std::string& chain_base_link, const std::string& chain_tip_link, const std::string& root_frame );
 		bool initialize(const ControllerParam& controller_param );
 
-
 		void forwardKinematics(const KDL::JntArray& jnt_angels);
 
 		void computeJacobian(const KDL::JntArray& jnt_angels);
@@ -99,6 +98,7 @@ namespace nmpc
 
 		void kdl_computeJacobian(const KDL::JntArray& jnt_angels);
 
+		//void computeInverseJacobianBySVD();
 
 		//get functions
 		std::string getChainBaseLink(void);
