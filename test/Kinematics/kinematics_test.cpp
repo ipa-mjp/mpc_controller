@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 		kin_solver.initialize();
 
 		KDL::JntArray jnt_angles = KDL::JntArray(7);
-		jnt_angles(0) = 1.57;	jnt_angles(1) = 0;	jnt_angles(2) = 0;	jnt_angles(3) = 0;
+		jnt_angles(0) = 1.57;	jnt_angles(1) = 1.57;	jnt_angles(2) = 1.57;	jnt_angles(3) = 1.57;
 		Eigen::MatrixXd J = kin_solver.getJacobian(jnt_angles);
 
 		ModelPredictiveControlACADO acado_solver_;

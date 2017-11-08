@@ -30,70 +30,52 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
 
     // INTRODUCE THE VARIABLES:
     // ----------------------------
-	DifferentialState	differential_vel ( "", m, 1 )	;	//differential state, in our case it is differential velocity
-	//DifferentialState	residual_error		;	//differential state, NONLINEAR-LEAST SEQUARE PROBLEM
-
-	Control q_dot ("", n , 1);					//control variable, in our case joint velocity
+	DifferentialState	q_dot ( "", m, 1 )	;	//differential state, Compute velocity of end-effector
+	Control x_dot ("", n , 1);					//Control Joint velocity
 
 	DifferentialEquation f;					//differential equation
 
-	differential_vel.clearStaticCounters();
-	//residual_error.clearStaticCounters();
 	q_dot.clearStaticCounters();
+	x_dot.clearStaticCounters();
 
 	//CALCULATE JACOBIAN MATRIX AND STORE INTO ACADO VARIABLES/MATRIX
-	//---------------------------------------------------------------
-	DMatrix J;		// Jacobian
-	J = this->jacobian_data_;
+	DMatrix J;		J = this->jacobian_data_;
 
-	//READ A VELOCITY VECTOR
-	//-----------------------------------------------------------------
 	//DVector reference_endeffector_velocity;
 	DVector reference_endeffector_velocity(6);
 	reference_endeffector_velocity.setAll(0.0);
-	reference_endeffector_velocity(2) = 0.0;
-	reference_endeffector_velocity(3) = 0.0;
-	reference_endeffector_velocity(4) = 0.0;
-	reference_endeffector_velocity(5) = 0.0;
 
 	//DEFINE A DIFFERENTIAL EQUATION
 	//----------------------------------------------------------------
-	f << dot(differential_vel) == J * q_dot;
-
-	//f << dot(residual_error) == q_dot.transpose() * q_dot;
-	//f << dot(residual_error) == 0.5*( (differential_vel-vel_target).transpose() * (differential_vel-vel_target));	// minimize in velocity error, NONLINEAR LEAST SQUARE PROBLEM
-
+	f << dot(q_dot) == J * x_dot;
 
 	// DEFINE AN OPTIMAL CONTROL PROBLEM:
 	// ----------------------------------
-	const double t_start = 0.0;
-	const double t_end 	 = 1.0;
-	const int discetization  = 10;	//no of steps [ t_end - t_start / time_step] = dt (time_step_size)
+	OCP ocp( 0.0, 1.0, 10);
 
-	OCP ocp( t_start, t_end, discetization);
-
-	ocp.minimizeMayerTerm( 0.5*((differential_vel)-reference_endeffector_velocity).transpose() * ((differential_vel)-reference_endeffector_velocity) );     // running cost
+	ocp.minimizeMayerTerm( 0.5*((q_dot)-reference_endeffector_velocity).transpose() * ((q_dot)-reference_endeffector_velocity) );     // running cost
 	ocp.subjectTo( f );
-	//ocp.subjectTo( AT_START  , q == xEnd);
-	//ocp.subjectTo( AT_END  , differential_vel == vel_target_End);
-	//ocp.subjectTo( AT_START, residual_error == (double)(x0.transpose() * x0));
-	ocp.subjectTo( -2 <= q_dot <= 5);	//temp set
+
 
     // DEFINE AN OPTIMIZATION ALGORITHM AND SOLVE THE OCP:
     // ---------------------------------------------------
-	OptimizationAlgorithm algorithm(ocp)					;
-	algorithm.set( MAX_NUM_ITERATIONS, 20 )					;
-	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING );//SINGLE_SHOOTING )	;
-	algorithm.set( LEVENBERG_MARQUARDT, 1e-5 )				;
-	//algorithm.set( INTEGRATOR_TYPE, INT_RK45 )				;
+	OptimizationAlgorithm algorithm(ocp);
 
-	algorithm.initializeControls("/home/bfb-ws/mpc_ws/src/mpc_controller/config/ControlstatesRef.txt");
+	VariablesGrid control_init(n,1);
+	control_init.setAll(0.5);
+	control_init(1) = 1.0;
+
+	algorithm.initializeControls(control_init);
+
+	algorithm.set( MAX_NUM_ITERATIONS, 20 );
+	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING );//SINGLE_SHOOTING )	;
+	algorithm.set( LEVENBERG_MARQUARDT, 1e-5 );
 
 	GnuplotWindow window1;
-	    window1.addSubplot(q_dot,"CONTROL  q_dot"   );
+	    window1.addSubplot(x_dot,"CONTROL  Joint velocity"   );
 
 	GnuplotWindow window2;
-		window2.addSubplot(differential_vel, "DIFFERENTIAL STATE  diff_vel");
+		window2.addSubplot(q_dot, "DIFFERENTIAL STATE  Compute velocity");
 
 	algorithm << window1;
 	algorithm << window2;
@@ -105,11 +87,13 @@ Eigen::MatrixXd ModelPredictiveControlACADO::solve(void)//(const Cart6dVector& i
     algorithm.getControls(controls_);
     algorithm.getDifferentialStates(diffStates);
 
-	GnuplotWindow window;
-		window.addSubplot(diffStates(0), "DIFFERENTIAL STATE  q");
-	    //window.addSubplot(diffStates(1),"DIFFERENTIAL STATE  Error");
-	    window.addSubplot(controls_,"CONTROL  q_dot"   );
-	window.plot( );
+	GnuplotWindow window3;
+	    window3.addSubplot(x_dot,"CONTROL  controlled velocity"   );
+		window3.plot( );
+
+	GnuplotWindow window4;
+		window4.addSubplot(q_dot, "DIFFERENTIAL STATE  Computed velocity");
+		window4.plot( );
 
 	std::cout<< controls_.getFirstVector() << std::endl;
 
@@ -290,8 +274,8 @@ Eigen::MatrixXd ModelPredictiveControlACADO::mpc_solve(void)//(const Cart6dVecto
 
 void ModelPredictiveControlACADO::hard_coded_solve(void)
 {
-	ACADO::DifferentialState  q_dot("",6,1);	//Compute velocity of end-effector
-	ACADO::Control  x_dot("",2,1);			//Control Joint velocity
+	ACADO::DifferentialState  x_dot("",6,1);	//Compute velocity of end-effector
+	ACADO::Control  q_dot("",2,1);			//Control Joint velocity
 
 	// Compute Jacobian Matrix
 	DMatrix Jac(6,2);
@@ -305,28 +289,44 @@ void ModelPredictiveControlACADO::hard_coded_solve(void)
 	//Setup Differential equation
 	ACADO::DifferentialEquation f;
 
-	f << dot(q_dot) == Jac * x_dot;
+	f << dot(x_dot) == Jac * q_dot;
 
 	DVector reference_endeffector_velocity(6);
 	reference_endeffector_velocity.setAll(0.0);
 	reference_endeffector_velocity(0) = -0.8026;
-	reference_endeffector_velocity(2) = -0.01830;
+	reference_endeffector_velocity(1) = -0.01830;
 	reference_endeffector_velocity(3) = 0.0;
 	reference_endeffector_velocity(4) = 0.0;
 	reference_endeffector_velocity(5) = 3.1415/5;
 
 	ACADO::OCP ocp(0.0, 1.0, 10);
 
-	ocp.minimizeMayerTerm( 0.5 * (q_dot - reference_endeffector_velocity).transpose() * (q_dot - reference_endeffector_velocity) );
+	ocp.minimizeMayerTerm( 0.5 * (x_dot - reference_endeffector_velocity).transpose() * (x_dot - reference_endeffector_velocity) );
 	ocp.subjectTo( f );
+
+	ocp.subjectTo( AT_START, x_dot == 0);
+
 	ROS_WARN("Hello");
 	OptimizationAlgorithm algorithm(ocp);
+
+
+	std::cout<<"\033[0;31m"	<< algorithm.getObjectiveValue() <<"\033[0;0m"<<"\n";
+
 	//algorithm.initializeDifferentialStates("/home/bfb-ws/mpc_ws/src/mpc_controller/config/DiffState.txt");
 
 	algorithm.initializeControls("/home/bfb-ws/mpc_ws/src/mpc_controller/config/DiffState.txt");
 	algorithm.set( MAX_NUM_ITERATIONS, 20 );
 	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING );
+/*
+	GnuplotWindow window1(PLOT_AT_EACH_ITERATION);
+	    window1.addSubplot(q_dot,"CONTROL  Joint velocity"   );
 
+	GnuplotWindow window2(PLOT_AT_EACH_ITERATION);
+		window2.addSubplot(x_dot,"Diff Velocity End-effector"   );
+
+	algorithm << window1;
+	algorithm << window2;
+*/
 	algorithm.solve();
 
 	VariablesGrid q_data, u_data;
@@ -339,5 +339,30 @@ void ModelPredictiveControlACADO::hard_coded_solve(void)
 	std::cout<<std::endl;
 	u_data.print();
 	//u_data(1).print();
+
+	VariablesGrid u_cnt_data(2,1), x_diff_state_data(6,1);
+	algorithm.getControls( u_cnt_data );
+	algorithm.getDifferentialStates(x_diff_state_data);
+
+/*
+	GnuplotWindow window3;
+	    window3.addSubplot( u_cnt_data(0),"Controlled  Joint_1 velocity" );
+	    window3.addSubplot( u_cnt_data(1),"Controlled  Joint_2 velocity" );
+	    window3.plot();
+*/
+	GnuplotWindow window4;
+	algorithm.getPlotWindow( window4 );
+		window4.addData(0, q_data(0) );
+		//window4.addSubplot( x_diff_state_data(2), "linear_velocity_z" );
+		//window4.addSubplot( x_diff_state_data(3), "Angular_velocity_x" );
+		//window4.addSubplot( x_diff_state_data(4), "Angular_velocity_y" );
+		//window4.addSubplot( x_diff_state_data(5), "Angular_velocity_z" );
+		window4.plot();
+/*
+		GnuplotWindow window5;
+			window5.addSubplot( 0.5 * (x_dot - reference_endeffector_velocity).transpose() * (x_dot - reference_endeffector_velocity) , "Cost Function" );
+			window5.plot();
+*/
+
 
 }
