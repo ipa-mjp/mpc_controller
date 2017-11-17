@@ -274,95 +274,36 @@ Eigen::MatrixXd ModelPredictiveControlACADO::mpc_solve(void)//(const Cart6dVecto
 
 void ModelPredictiveControlACADO::hard_coded_solve(void)
 {
-	ACADO::DifferentialState  x_dot("",6,1);	//Compute velocity of end-effector
-	ACADO::Control  q_dot("",2,1);			//Control Joint velocity
+	std::cout<< "hard_coded_solver"<<std::endl;
+	//POSITION CONTROL
+	//--------------------------------------------------------------------------------------
+	DifferentialState x_t("x_t", 7, 1) ; //< Time depended end_effector position with dim(7,1)
+	//DifferentialState e_t("e_t", 7, 1) ; //< Time depended error vector on end_effector position with dim(7,1)
 
-	// Compute Jacobian Matrix
-	DMatrix Jac(6,2);
-	Jac.setAll(0.0);
+	std::cout<< "Init x_d vector"<<std::endl;
+	DVector x_d(7); 					//< Time in-depended end_effector position denominated as desired position
+	x_d.setAll(0.0);
+	x_d(0) = 1.0;
 
-	Jac(0,0) = -sin(0.785375)-sin(0.785375+ 1.1780625);	Jac(0,1) = -sin(0.785375 + 1.1780625);
-	Jac(1,0) = cos(0.785375)+cos(0.785375+ 1.1780625);	Jac(1,1) = cos(0.785375 + 1.1780625);
-
-	Jac(5,0) = 1;	Jac(5,1) = 1;
-
-	//Setup Differential equation
-	ACADO::DifferentialEquation f;
-
-	f << dot(x_dot) == Jac * q_dot;
-
-	DVector reference_endeffector_velocity(6);
-	reference_endeffector_velocity.setAll(0.0);
-	reference_endeffector_velocity(0) = -0.8026;
-	reference_endeffector_velocity(1) = -0.01830;
-	reference_endeffector_velocity(3) = 0.0;
-	reference_endeffector_velocity(4) = 0.0;
-	reference_endeffector_velocity(5) = 3.1415/5;
-
-	ACADO::OCP ocp(0.0, 1.0, 10);
-
-	ocp.minimizeMayerTerm( 0.5 * (x_dot - reference_endeffector_velocity).transpose() * (x_dot - reference_endeffector_velocity) );
-	ocp.subjectTo( f );
-
-	ocp.subjectTo( AT_START, x_dot == 0);
-
-	ROS_WARN("Hello");
-	OptimizationAlgorithm algorithm(ocp);
+	std::cout<< "Define differential equation"<<std::endl;
+	DifferentialEquation f;				//< Differential equation dot(x_t) = 0
+	f << dot(x_t) == 0;
 
 
-	std::cout<<"\033[0;31m"	<< algorithm.getObjectiveValue() <<"\033[0;0m"<<"\n";
+	std::cout<< "Define optimal control problem"<<std::endl;
+	//Define optimal control problem
+	OCP ocp_problem( 0.0 , 1.0, 10);
+	ocp_problem.maximizeMayerTerm( 0.5 * (x_d - x_t).transpose() * (x_d - x_t) );	//< Cost/Objective Function, want to minimize
+//	ocp_problem.subjectTo( f );
+	//ocp_problem.subjectTo( AT_START, x_t == 0 );
 
-	//algorithm.initializeDifferentialStates("/home/bfb-ws/mpc_ws/src/mpc_controller/config/DiffState.txt");
-
-	algorithm.initializeControls("/home/bfb-ws/mpc_ws/src/mpc_controller/config/DiffState.txt");
+	std::cout<< "Define Optimization algorithm"<<std::endl;
+	// Define Optimization algorithm
+	OptimizationAlgorithm algorithm(ocp_problem);
 	algorithm.set( MAX_NUM_ITERATIONS, 20 );
 	algorithm.set( DISCRETIZATION_TYPE,	MULTIPLE_SHOOTING );
-/*
-	GnuplotWindow window1(PLOT_AT_EACH_ITERATION);
-	    window1.addSubplot(q_dot,"CONTROL  Joint velocity"   );
+	algorithm.set( LEVENBERG_MARQUARDT, 1e-5 );
 
-	GnuplotWindow window2(PLOT_AT_EACH_ITERATION);
-		window2.addSubplot(x_dot,"Diff Velocity End-effector"   );
-
-	algorithm << window1;
-	algorithm << window2;
-*/
 	algorithm.solve();
-
-	VariablesGrid q_data, u_data;
-	algorithm.getDifferentialStates(q_data);
-	algorithm.getControls(u_data);
-
-	q_data.print();
-	//q_data(1).print();
-	std::cout<<std::endl;
-	std::cout<<std::endl;
-	u_data.print();
-	//u_data(1).print();
-
-	VariablesGrid u_cnt_data(2,1), x_diff_state_data(6,1);
-	algorithm.getControls( u_cnt_data );
-	algorithm.getDifferentialStates(x_diff_state_data);
-
-/*
-	GnuplotWindow window3;
-	    window3.addSubplot( u_cnt_data(0),"Controlled  Joint_1 velocity" );
-	    window3.addSubplot( u_cnt_data(1),"Controlled  Joint_2 velocity" );
-	    window3.plot();
-*/
-	GnuplotWindow window4;
-	algorithm.getPlotWindow( window4 );
-		window4.addData(0, q_data(0) );
-		//window4.addSubplot( x_diff_state_data(2), "linear_velocity_z" );
-		//window4.addSubplot( x_diff_state_data(3), "Angular_velocity_x" );
-		//window4.addSubplot( x_diff_state_data(4), "Angular_velocity_y" );
-		//window4.addSubplot( x_diff_state_data(5), "Angular_velocity_z" );
-		window4.plot();
-/*
-		GnuplotWindow window5;
-			window5.addSubplot( 0.5 * (x_dot - reference_endeffector_velocity).transpose() * (x_dot - reference_endeffector_velocity) , "Cost Function" );
-			window5.plot();
-*/
-
 
 }
