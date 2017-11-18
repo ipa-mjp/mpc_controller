@@ -10,7 +10,7 @@
 	<arg name="enable_gazebo_gui" default="false"/>
 	<arg name="paused" default="false"/>
 	
-	<rosparam command="load" file="$(find mpc_controller)/config/mpc_utilities.yaml" />
+	<!--rosparam command="load" file="$(find mpc_controller)/config/mpc_utilities.yaml" /-->
 	
 	<!-- Simulation -->
 	<include file="$(find cob_bringup_sim)/launch/robot.launch">
